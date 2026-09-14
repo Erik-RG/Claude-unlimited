@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude AI Assistant</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-main: #141417;
+            --bg-sidebar: #1d1d22;
+            --bg-surface: #27272e;
+            --bg-surface-hover: #32323b;
+            --border-color: #3f3f4a;
+            --text-primary: #f4f4f6;
+            --text-secondary: #a1a1aa;
+            --accent: #f97316;
+            --accent-hover: #ea580c;
+            --msg-user: #27272e;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        body.light-theme {
+            --bg-main: #f8fafc;
+            --bg-sidebar: #ffffff;
+            --bg-surface: #f1f5f9;
+            --bg-surface-hover: #e2e8f0;
+            --border-color: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --accent: #ea580c;
+            --accent-hover: #c2410c;
+            --msg-user: #e2e8f0;
+            --card-border: rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            max-height: 100vh;
+            max-height: 100dvh;
+            overflow: hidden !important;
+            font-family: var(--font-main);
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .icon {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            z-index: 40;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+
+        .new-chat-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .new-chat-btn:hover {
+            background-color: var(--bg-surface-hover);
+            border-color: var(--accent);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 12px;
+        }
+
+        .prompt-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            height: 100%;
+        }
+
+        .prompt-card:hover {
+            background-color: var(--bg-surface-hover);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .search-container {
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-container:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+        }
+
+        .search-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            resize: none;
+            max-height: 160px;
+            font-family: var(--font-main);
+            line-height: 1.5;
+            padding: 4px 0;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .send-btn {
+            background-color: var(--accent);
+            color: white;
+            padding: 8px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s ease, opacity 0.15s ease;
+        }
+
+        .send-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .assistant-message-wrapper {
+            position: relative;
+        }
+
+        .message-action-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            opacity: 0.7;
+            transition: opacity 0.15s ease;
+        }
+
+        .assistant-message-wrapper:hover .message-action-bar {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background-color: var(--bg-surface);
+            transition: all 0.15s ease;
+        }
+
+        .action-btn:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-surface-hover);
+            border-color: var(--accent);
+        }
+
+        .chat-messages {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .markdown-body {
+            font-size: 14.5px;
+            line-height: 1.65;
+            color: var(--text-primary);
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .markdown-body p {
+            margin-bottom: 0.85em;
+        }
+
+        .markdown-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+
+        .markdown-body h1 { font-size: 1.4em; }
+        .markdown-body h2 { font-size: 1.25em; }
+        .markdown-body h3 { font-size: 1.1em; }
+
+        .markdown-body ul, .markdown-body ol {
+            margin-top: 0.4em;
+            margin-bottom: 0.8em;
+            padding-left: 1.5em;
+        }
+
+        .markdown-body ul { list-style-type: disc; }
+        .markdown-body ol { list-style-type: decimal; }
+        .markdown-body li { margin-bottom: 0.3em; }
+
+        .markdown-body code:not(pre code) {
+            background-color: var(--bg-surface-hover);
+            color: var(--accent);
+            padding: 0.15em 0.4em;
+            border-radius: 5px;
+            font-family: var(--font-mono);
+            font-size: 0.88em;
+            border: 1px solid var(--border-color);
+        }
+
+        .markdown-body pre {
+            margin: 0.9em 0;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background-color: #0d1117;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #161b22;
+            padding: 6px 14px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: #8b949e;
+            border-bottom: 1px solid #21262d;
+        }
+
+        .code-header button {
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.15s ease;
+        }
+
+        .code-header button:hover {
+            color: #c9d1d9;
+            background-color: #21262d;
+        }
+
+        .markdown-body pre code.hljs {
+            display: block;
+            padding: 14px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+            background-color: #0d1117;
+        }
+
+        .markdown-body blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 12px;
+            margin: 0.8em 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: 13.5px;
+        }
+
+        .markdown-body th, .markdown-body td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .markdown-body th {
+            background-color: var(--bg-surface);
+            font-weight: 600;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        #toastContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background-color: var(--bg-sidebar);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <svg style="display: none;">
+        <symbol id="icon-sparkles" viewBox="0 0 24 24">
+            <path d="M12 3c0 4.5-3.5 8-8 8 4.5 0 8 3.5 8 8 0-4.5 3.5-8 8-8-4.5 0-8-3.5-8-8z"/>
+        </symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+        </symbol>
+        <symbol id="icon-menu" viewBox="0 0 24 24">
+            <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+        </symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </symbol>
+        <symbol id="icon-send" viewBox="0 0 24 24">
+            <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </symbol>
+        <symbol id="icon-attach" viewBox="0 0 24 24">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+        </symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </symbol>
+        <symbol id="icon-alert" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </symbol>
+        <symbol id="icon-code" viewBox="0 0 24 24">
+            <polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline>
+        </symbol>
+        <symbol id="icon-pen" viewBox="0 0 24 24">
+            <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </symbol>
+        <symbol id="icon-compass" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+        </symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </symbol>
+    </svg>
+
+    <div id="toastContainer"></div>
+
+    <div class="flex h-full w-full relative overflow-hidden">
+        <aside class="sidebar h-full shrink-0" id="sidebar">
+            <div class="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
+                <div class="flex items-center gap-2.5 font-semibold text-[var(--text-primary)]">
+                    <div class="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                        <svg class="icon w-4 h-4"><use href="#icon-sparkles"></use></svg>
+                    </div>
+                    <span class="text-sm font-semibold tracking-tight">Claude Assistant</span>
+                </div>
+                <button class="md:hidden text-zinc-400 hover:text-[var(--text-primary)] p-1 rounded-lg hover:bg-[var(--bg-surface)] transition-colors" id="closeSidebarBtn">
+                    <svg class="icon w-5 h-5"><use href="#icon-x"></use></svg>
+                </button>
+            </div>
+            
+            <div class="p-3">
+                <button class="new-chat-btn" id="newChatBtn">
+                    <svg class="icon w-4 h-4" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>New chat</span>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="text-[11px] font-semibold text-zinc-400 mb-2 uppercase tracking-wider px-2 flex justify-between items-center">
+                    <span>Recent Chats</span>
+                    <button id="clearHistoryBtn" class="hover:text-red-400 transition-colors p-1" title="Clear all history">
+                        <svg class="icon w-3.5 h-3.5"><use href="#icon-trash"></use></svg>
+                    </button>
+                </div>
+                <div id="recentItems" class="space-y-1"></div>
+            </div>
+
+            <div class="p-3.5 border-t border-[var(--border-color)] text-xs text-zinc-400 flex justify-between items-center">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                    Puter AI Connected
+                </span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-full min-w-0 bg-[var(--bg-main)] relative overflow-hidden">
+            <header class="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)] bg-[var(--bg-sidebar)] shrink-0 h-14">
+                <div class="flex items-center gap-3 min-w-0">
+                    <button id="openSidebarBtn" class="md:hidden p-1.5 text-zinc-400 hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-surface)] shrink-0 transition-colors">
+                        <svg class="icon w-5 h-5"><use href="#icon-menu"></use></svg>
+                    </button>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="font-semibold text-sm text-[var(--text-primary)] truncate">Claude Assistant</span>
+                        
+                        <div class="relative inline-block">
+                            <select id="modelSelect" class="text-xs bg-[var(--bg-surface)] text-orange-400 border border-orange-500/30 rounded-lg px-2 py-1 outline-none cursor-pointer hover:border-orange-500 font-medium transition-colors">
+                                <option value="claude-3-7-sonnet">Claude 3.7 Sonnet</option>
+                                <option value="claude-sonnet-5" selected>Claude Sonnet 5</option>
+                                <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button id="themeToggleBtn" class="p-2 text-zinc-400 hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-surface)] transition-colors flex items-center justify-center" title="Toggle Theme">
+                        <svg class="icon w-4 h-4" id="themeIcon"><use href="#icon-sun"></use></svg>
+                    </button>
+
+                    <button id="globalAuthBtn" class="text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium transition-colors bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-color)]">
+                        <svg class="icon w-3.5 h-3.5"><use href="#icon-lock"></use></svg>
+                        <span id="globalAuthText">Puter Auth</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 flex flex-col max-w-4xl mx-auto w-full h-full min-h-0 relative overflow-hidden">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen flex-1 flex flex-col items-center justify-between p-4 md:p-6 overflow-y-auto w-full min-h-0" id="welcomeScreen">
+                    <div class="my-auto py-6 text-center max-w-2xl w-full flex flex-col items-center">
+                        <div class="w-13 h-13 p-3 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white mb-5 shadow-lg shadow-orange-500/20 shrink-0">
+                            <svg class="icon w-7 h-7"><use href="#icon-sparkles"></use></svg>
+                        </div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2.5">What would you like to explore today?</h1>
+                        <p class="text-sm text-[var(--text-secondary)] mb-8 max-w-lg leading-relaxed">
+                            Powered directly by Puter Cloud AI API with real-time streaming and Markdown formatting.
+                        </p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 w-full max-w-2xl text-left">
+                            <button class="prompt-card" onclick="setInputPrompt('Write a clean Python script to parse JSON and highlight key formatting practices with code blocks.')">
+                                <div class="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center mb-3 shrink-0">
+                                    <svg class="icon w-4 h-4"><use href="#icon-code"></use></svg>
+                                </div>
+                                <div class="font-semibold text-xs text-[var(--text-primary)] mb-1">Write Code</div>
+                                <div class="text-xs text-[var(--text-secondary)] leading-normal line-clamp-2">Python script with syntax highlighting.</div>
+                            </button>
+
+                            <button class="prompt-card" onclick="setInputPrompt('Create a structured markdown table comparing SQL vs NoSQL databases with pros, cons, and best use cases.')">
+                                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center mb-3 shrink-0">
+                                    <svg class="icon w-4 h-4"><use href="#icon-pen"></use></svg>
+                                </div>
+                                <div class="font-semibold text-xs text-[var(--text-primary)] mb-1">Markdown Table</div>
+                                <div class="text-xs text-[var(--text-secondary)] leading-normal line-clamp-2">Compare SQL & NoSQL in a table.</div>
+                            </button>
+
+                            <button class="prompt-card" onclick="setInputPrompt('Explain how LLM transformer attention mechanisms work in bullet points with code snippets.')">
+                                <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center mb-3 shrink-0">
+                                    <svg class="icon w-4 h-4"><use href="#icon-compass"></use></svg>
+                                </div>
+                                <div class="font-semibold text-xs text-[var(--text-primary)] mb-1">Deep Learning</div>
+                                <div class="text-xs text-[var(--text-secondary)] leading-normal line-clamp-2">Breakdown of attention mechanisms.</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="w-full max-w-2xl mb-2">
+                        <div class="search-container p-3">
+                            <div id="welcomeAttachmentBadge" class="hidden mb-2 p-1.5 px-3 bg-[var(--bg-surface)] text-xs text-orange-400 rounded-lg flex items-center gap-2 border border-orange-500/20">
+                                <svg class="icon w-3.5 h-3.5"><use href="#icon-attach"></use></svg>
+                                <span id="welcomeAttachmentName" class="truncate"></span>
+                                <button onclick="removeAttachment()" class="ml-auto text-zinc-400 hover:text-white">&times;</button>
+                            </div>
+                            <textarea class="search-input" id="welcomeInput" placeholder="Message Claude..." rows="2"></textarea>
+                            <div class="flex items-center justify-between mt-2 pt-2.5 border-t border-[var(--border-color)]">
+                                <div class="flex items-center gap-1.5">
+                                    <input type="file" id="fileInput" class="hidden">
+                                    <button class="text-zinc-400 hover:text-[var(--text-primary)] p-1.5 rounded-lg hover:bg-[var(--bg-surface)] transition-colors inline-flex items-center justify-center" id="attachBtn" title="Attach file">
+                                        <svg class="icon w-4 h-4"><use href="#icon-attach"></use></svg>
+                                    </button>
+                                </div>
+                                <button class="send-btn flex items-center justify-center gap-1.5 px-3.5 py-1.5 font-medium text-xs leading-none" id="welcomeSendBtn">
+                                    <span>Send Message</span>
+                                    <svg class="icon w-3.5 h-3.5"><use href="#icon-send"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Chat Screen -->
+                <div class="chat-container hidden flex-col flex-1 h-full min-h-0 overflow-hidden" id="chatContainer">
+                    <div class="chat-messages flex-1 overflow-y-auto p-4 md:p-6 space-y-6 min-h-0" id="chatMessages"></div>
+                    
+                    <div class="typing-indicator px-6 pb-2" id="typingIndicator">
+                        <div class="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center text-white shrink-0">
+                            <svg class="icon w-4 h-4"><use href="#icon-sparkles"></use></svg>
+                        </div>
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                        <span class="text-xs text-zinc-400 ml-1">Claude is thinking...</span>
+                    </div>
+                    
+                    <div class="p-4 bg-[var(--bg-main)] shrink-0">
+                        <div class="search-container" id="chatComposer">
+                            <div id="chatAttachmentBadge" class="hidden m-2 mb-0 p-1.5 px-3 bg-[var(--bg-surface)] text-xs text-orange-400 rounded-lg flex items-center gap-2 border border-orange-500/20">
+                                <svg class="icon w-3.5 h-3.5"><use href="#icon-attach"></use></svg>
+                                <span id="chatAttachmentName" class="truncate"></span>
+                                <button onclick="removeAttachment()" class="ml-auto text-zinc-400 hover:text-white">&times;</button>
+                            </div>
+                            <div class="flex items-center p-2.5 gap-2">
+                                <button class="attach-btn text-zinc-400 hover:text-[var(--text-primary)] p-2 rounded-lg shrink-0 hover:bg-[var(--bg-surface)] transition-colors inline-flex items-center justify-center" id="chatAttachBtn" title="Attach file">
+                                    <svg class="icon w-4 h-4"><use href="#icon-attach"></use></svg>
+                                </button>
+                                <textarea class="search-input" id="chatInput" placeholder="Message Claude..." rows="1"></textarea>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button class="send-btn shrink-0 w-8 h-8" id="chatSendBtn" title="Send message">
+                                        <svg class="icon w-4 h-4"><use href="#icon-send"></use></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentModel = 'claude-sonnet-5';
+        let chatHistory = []; 
+        let conversations = [];
+        let currentConversationId = null;
+        let isStreaming = false;
+        let attachedFileContent = null;
+
+        marked.use({
+            renderer: {
+                code(token) {
+                    const code = (token && token.text) ? token.text : String(token || '');
+                    const infostring = (token && token.lang) ? token.lang : '';
+                    const lang = (infostring || '').match(/\S*/)[0];
+
+                    let highlighted = '';
+                    if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
+                        try {
+                            highlighted = hljs.highlight(code, { language: lang }).value;
+                        } catch (e) {
+                            highlighted = escapeHtml(code);
+                        }
+                    } else {
+                        highlighted = escapeHtml(code);
+                    }
+                    
+                    const codeId = 'code-' + Math.random().toString(36).substring(2, 9);
+                    return `<pre><div class="code-header"><span>${lang || 'text'}</span><button onclick="copyCode('${codeId}')"><svg class="icon w-3.5 h-3.5"><use href="#icon-copy"></use></svg><span>Copy code</span></button></div><code id="${codeId}" class="hljs ${lang ? 'language-' + lang : ''}">${highlighted}</code></pre>`;
+                }
+            }
+        });
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function copyCode(elementId) {
+            const codeEl = document.getElementById(elementId);
+            if (!codeEl) return;
+            const text = codeEl.textContent;
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast('Code copied to clipboard!', 'success');
+            } catch (err) {
+                showToast('Failed to copy code', 'error');
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
+        function copyMessageText(msgId) {
+            const contentEl = document.getElementById(msgId);
+            if (!contentEl) return;
+            const text = contentEl.textContent;
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast('Message copied to clipboard!', 'success');
+            } catch (err) {
+                showToast('Failed to copy message', 'error');
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initializeInterface();
+            loadConversations();
+            await checkAuthStatus();
+        });
+
+        function initializeInterface() {
+            const themeBtn = document.getElementById('themeToggleBtn');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            themeBtn.addEventListener('click', () => {
+                document.body.classList.toggle('light-theme');
+                const isLight = document.body.classList.contains('light-theme');
+                themeIcon.innerHTML = `<use href="#${isLight ? 'icon-moon' : 'icon-sun'}"></use>`;
+                showToast(`Switched to ${isLight ? 'Light' : 'Dark'} mode`, 'info');
+            });
+
+            const modelSelect = document.getElementById('modelSelect');
+            modelSelect.addEventListener('change', (e) => {
+                currentModel = e.target.value;
+                showToast(`Switched model to ${modelSelect.options[modelSelect.selectedIndex].text}`, 'info');
+            });
+
+            const sidebar = document.getElementById('sidebar');
+            const openSidebarBtn = document.getElementById('openSidebarBtn');
+            const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+            openSidebarBtn.addEventListener('click', () => sidebar.classList.add('open'));
+            closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+
+            document.getElementById('newChatBtn').addEventListener('click', () => {
+                startNewChat();
+                if (window.innerWidth <= 768) sidebar.classList.remove('open');
+            });
+
+            document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+                if (conversations.length === 0) {
+                    showToast('No chat history to delete.', 'info');
+                    return;
+                }
+                clearAllChats();
+            });
+
+            const welcomeInput = document.getElementById('welcomeInput');
+            const welcomeSendBtn = document.getElementById('welcomeSendBtn');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+
+            welcomeSendBtn.addEventListener('click', () => handleSend(welcomeInput));
+            welcomeInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend(welcomeInput);
+                }
+            });
+
+            chatSendBtn.addEventListener('click', () => handleSend(chatInput));
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend(chatInput);
+                }
+            });
+
+            setupFileHandlers();
+
+            [welcomeInput, chatInput].forEach(textarea => {
+                textarea.addEventListener('input', () => {
+                    textarea.style.height = 'auto';
+                    textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+                });
+            });
+
+            document.getElementById('globalAuthBtn').addEventListener('click', handleManualAuth);
+        }
+
+        function clearAllChats() {
+            conversations = [];
+            saveConversations();
+            renderConversationsList();
+            startNewChat();
+            showToast('Chat history cleared', 'info');
+        }
+
+        function deleteSingleChat(e, id) {
+            e.stopPropagation();
+            conversations = conversations.filter(c => c.id !== id);
+            saveConversations();
+            renderConversationsList();
+            if (currentConversationId === id) {
+                startNewChat();
+            }
+            showToast('Chat deleted', 'info');
+        }
+
+        function setupFileHandlers() {
+            const fileInput = document.getElementById('fileInput');
+            const attachBtns = [document.getElementById('attachBtn'), document.getElementById('chatAttachBtn')];
+
+            attachBtns.forEach(btn => {
+                if (btn) {
+                    btn.addEventListener('click', () => fileInput.click());
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    attachedFileContent = {
+                        name: file.name,
+                        text: event.target.result
+                    };
+                    
+                    ['welcomeAttachmentName', 'chatAttachmentName'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = file.name;
+                    });
+                    ['welcomeAttachmentBadge', 'chatAttachmentBadge'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.classList.remove('hidden');
+                    });
+
+                    showToast(`Attached file: ${file.name}`, 'info');
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        function removeAttachment() {
+            attachedFileContent = null;
+            ['welcomeAttachmentBadge', 'chatAttachmentBadge'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) fileInput.value = '';
+        }
+
+        function setInputPrompt(text) {
+            const welcomeInput = document.getElementById('welcomeInput');
+            welcomeInput.value = text;
+            welcomeInput.focus();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            
+            const iconSvg = type === 'error' ? '#icon-alert' : '#icon-check';
+            const iconClass = type === 'error' ? 'text-red-400' : 'text-emerald-400';
+            
+            toast.innerHTML = `
+                <svg class="icon ${iconClass} w-4 h-4"><use href="${iconSvg}"></use></svg>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function checkAuthStatus() {
+            const globalAuthBtn = document.getElementById('globalAuthBtn');
+            const globalAuthText = document.getElementById('globalAuthText');
+            if (typeof puter === 'undefined') return;
+
+            try {
+                const signedIn = await puter.auth.isSignedIn();
+                if (signedIn) {
+                    let username = 'Authenticated';
+                    try {
+                        const user = await puter.auth.getUser();
+                        if (user && user.username) username = user.username;
+                    } catch(e) {}
+
+                    globalAuthBtn.className = 'text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                    globalAuthText.textContent = username;
+                } else {
+                    globalAuthBtn.className = 'text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium bg-orange-600 text-white hover:bg-orange-500';
+                    globalAuthText.textContent = 'Sign In';
+                }
+            } catch (e) {
+                console.warn('Auth check status:', e);
+            }
+        }
+
+        async function handleManualAuth() {
+            if (typeof puter === 'undefined') {
+                showToast('Puter JS SDK not loaded.', 'error');
+                return;
+            }
+            try {
+                await puter.auth.signIn();
+                showToast('Successfully authenticated with Puter!', 'success');
+                await checkAuthStatus();
+            } catch (error) {
+                console.error('Auth failed:', error);
+                showToast('Authentication failed or dismissed.', 'error');
+            }
+        }
+
+        async function handleSend(inputElement) {
+            let query = inputElement.value.trim();
+            if ((!query && !attachedFileContent) || isStreaming) return;
+
+            if (attachedFileContent) {
+                query = `[Attached File: ${attachedFileContent.name}]\n\`\`\`\n${attachedFileContent.text}\n\`\`\`\n\n${query}`;
+                removeAttachment();
+            }
+
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('chatContainer').classList.remove('hidden');
+            document.getElementById('chatContainer').classList.add('flex');
+
+            inputElement.value = '';
+            inputElement.style.height = 'auto';
+
+            if (!currentConversationId) {
+                currentConversationId = 'conv_' + Date.now();
+            }
+
+            appendUserMessageUI(query);
+            chatHistory.push({ role: 'user', content: query });
+
+            await fetchPuterAIResponse();
+        }
+
+        function appendUserMessageUI(text) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'flex gap-3.5 items-start justify-end';
+            
+            const column = document.createElement('div');
+            column.className = 'max-w-2xl bg-orange-500/10 text-[var(--text-primary)] px-4 py-3 rounded-2xl border border-orange-500/20 message-content text-sm leading-relaxed whitespace-pre-wrap';
+            column.textContent = text;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'w-7 h-7 rounded-lg bg-zinc-600 text-white flex items-center justify-center shrink-0 text-xs font-semibold mt-0.5';
+            avatar.textContent = 'U';
+
+            div.appendChild(column);
+            div.appendChild(avatar);
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function createAssistantMessageUI() {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'flex gap-3.5 items-start justify-start assistant-message-wrapper';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0 text-xs font-semibold mt-0.5';
+            avatar.innerHTML = '<svg class="icon w-4 h-4"><use href="#icon-sparkles"></use></svg>';
+
+            const contentColumn = document.createElement('div');
+            contentColumn.className = 'flex-1 max-w-3xl';
+
+            const msgId = 'msg-' + Math.random().toString(36).substring(2, 9);
+            const markdownBody = document.createElement('div');
+            markdownBody.className = 'text-[var(--text-primary)] markdown-body';
+            markdownBody.id = msgId;
+
+            const actionBar = document.createElement('div');
+            actionBar.className = 'message-action-bar';
+            actionBar.innerHTML = `
+                <button class="action-btn" onclick="copyMessageText('${msgId}')">
+                    <svg class="icon w-3.5 h-3.5"><use href="#icon-copy"></use></svg>
+                    <span>Copy</span>
+                </button>
+            `;
+
+            contentColumn.appendChild(markdownBody);
+            contentColumn.appendChild(actionBar);
+
+            div.appendChild(avatar);
+            div.appendChild(contentColumn);
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+
+            return markdownBody;
+        }
+
+        async function fetchPuterAIResponse() {
+            isStreaming = true;
+            const indicator = document.getElementById('typingIndicator');
+            indicator.classList.add('active');
+
+            let assistantElement = null;
+            let fullText = '';
+
+            try {
+                if (typeof puter === 'undefined' || !puter.ai || !puter.ai.chat) {
+                    throw new Error("Puter AI SDK is not available.");
+                }
+
+                const response = await puter.ai.chat(chatHistory, {
+                    model: currentModel,
+                    stream: true
+                });
+
+                indicator.classList.remove('active');
+                assistantElement = createAssistantMessageUI();
+
+                if (response && typeof response[Symbol.asyncIterator] === 'function') {
+                    for await (const chunk of response) {
+                        let delta = '';
+                        if (typeof chunk === 'string') {
+                            delta = chunk;
+                        } else if (chunk && typeof chunk === 'object') {
+                            delta = chunk.text || chunk.message?.content || chunk.delta || '';
+                        }
+                        fullText += delta;
+                        assistantElement.innerHTML = marked.parse(fullText);
+                        const container = document.getElementById('chatMessages');
+                        container.scrollTop = container.scrollHeight;
+                    }
+                } else if (response) {
+                    if (typeof response === 'string') {
+                        fullText = response;
+                    } else if (typeof response === 'object') {
+                        fullText = response.message?.content || response.text || JSON.stringify(response);
+                    }
+                    assistantElement.innerHTML = marked.parse(fullText);
+                }
+
+                if (!fullText) {
+                    fullText = "I received an empty response. Please try asking again.";
+                    assistantElement.innerHTML = marked.parse(fullText);
+                }
+
+                chatHistory.push({ role: 'assistant', content: fullText });
+                saveCurrentConversation();
+
+            } catch (err) {
+                console.error("Puter AI Error:", err);
+                indicator.classList.remove('active');
+                
+                if (!assistantElement) {
+                    assistantElement = createAssistantMessageUI();
+                }
+                
+                const errorMsg = `**API Error:** Unable to reach Puter AI (${err.message || 'Unknown error'}).\n\nPlease check your Puter authentication or connection and try again.`;
+                assistantElement.innerHTML = marked.parse(errorMsg);
+                showToast("Puter AI error: " + (err.message || 'Failed'), 'error');
+            } finally {
+                isStreaming = false;
+            }
+        }
+
+        function startNewChat() {
+            chatHistory = [];
+            currentConversationId = null;
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+            document.getElementById('chatContainer').classList.add('hidden');
+            document.getElementById('chatContainer').classList.remove('flex');
+            showToast('Started new conversation', 'info');
+        }
+
+        function saveCurrentConversation() {
+            if (!currentConversationId || chatHistory.length === 0) return;
+            
+            const firstUserMsg = chatHistory.find(m => m.role === 'user')?.content || 'New Chat';
+            const title = firstUserMsg.length > 30 ? firstUserMsg.substring(0, 30) + '...' : firstUserMsg;
+
+            const existingIndex = conversations.findIndex(c => c.id === currentConversationId);
+            const convData = {
+                id: currentConversationId,
+                title: title,
+                history: chatHistory,
+                model: currentModel,
+                timestamp: Date.now()
+            };
+
+            if (existingIndex >= 0) {
+                conversations[existingIndex] = convData;
+            } else {
+                conversations.unshift(convData);
+            }
+
+            saveConversations();
+            renderConversationsList();
+        }
+
+        function saveConversations() {
+            try {
+                localStorage.setItem('claude_puter_conversations', JSON.stringify(conversations));
+            } catch(e) {}
+        }
+
+        function loadConversations() {
+            try {
+                const data = localStorage.getItem('claude_puter_conversations');
+                if (data) conversations = JSON.parse(data);
+            } catch(e) {
+                conversations = [];
+            }
+            renderConversationsList();
+        }
+
+        function renderConversationsList() {
+            const list = document.getElementById('recentItems');
+            list.innerHTML = '';
+
+            if (conversations.length === 0) {
+                list.innerHTML = `<div class="p-2 text-xs text-zinc-500 italic px-2">No recent chats</div>`;
+                return;
+            }
+
+            conversations.forEach(conv => {
+                const item = document.createElement('div');
+                const isActive = conv.id === currentConversationId;
+                item.className = `p-2 text-xs rounded-lg cursor-pointer truncate transition-colors flex items-center justify-between group ${isActive ? 'bg-[var(--bg-surface-hover)] text-orange-400 font-medium' : 'text-zinc-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)]'}`;
+                
+                item.innerHTML = `
+                    <span class="truncate flex-1">${escapeHtml(conv.title)}</span>
+                    <button class="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-opacity ml-2 shrink-0" onclick="deleteSingleChat(event, '${conv.id}')" title="Delete chat">
+                        <svg class="icon w-3.5 h-3.5"><use href="#icon-trash"></use></svg>
+                    </button>
+                `;
+                item.addEventListener('click', () => loadConversationSession(conv.id));
+                list.appendChild(item);
+            });
+        }
+
+        function loadConversationSession(id) {
+            const conv = conversations.find(c => c.id === id);
+            if (!conv) return;
+
+            currentConversationId = conv.id;
+            chatHistory = [...conv.history];
+            currentModel = conv.model || 'claude-sonnet-5';
+            
+            document.getElementById('modelSelect').value = currentModel;
+            document.getElementById('chatMessages').innerHTML = '';
+
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('chatContainer').classList.remove('hidden');
+            document.getElementById('chatContainer').classList.add('flex');
+
+            chatHistory.forEach(msg => {
+                if (msg.role === 'user') {
+                    appendUserMessageUI(msg.content);
+                } else {
+                    const assistantEl = createAssistantMessageUI();
+                    assistantEl.innerHTML = marked.parse(msg.content);
+                }
+            });
+
+            renderConversationsList();
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        }
+    </script>
+</body>
+</html>
